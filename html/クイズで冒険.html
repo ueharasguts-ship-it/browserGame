@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>クイズで冒険</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            text-align: center;
+            color: #fff;
+            margin: 0;
+        }
+
+        #game {
+            max-width: 700px;
+            margin: auto;
+            padding: 20px;
+            position: relative;
+        }
+
+        .enemy {
+            width: 60%;
+            max-width: 600px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 8px 12px;
+            margin: 5px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(to bottom, #66bb6a, #2e7d32);
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #1b5e20;
+            transition: all 0.1s ease;
+        }
+
+        button:hover {
+            background: linear-gradient(to bottom, #7ee383, #3eab44);
+            box-shadow: 0 4px 0 #2d9b35;
+        }
+
+        button:disabled {
+            opacity: 1;
+            cursor: default;
+            /* ←自然にする */
+            pointer-events: none;
+            /* 念のため */
+        }
+
+        .box {
+            border: 2px solid #fff;
+            padding: 12px;
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            min-height: 60px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        #title,
+        #clear {
+            position: fixed;
+            /* ←画面基準にする */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            text-align: center;
+            z-index: 9999;
+
+            width: 90%;
+            max-width: 500px;
+
+            background: rgba(10, 10, 10, 0.452);
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        #title {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #title button {
+            display: block;
+            width: 220px;
+            /* ←サイズ統一 */
+            margin-top: 10px;
+        }
+
+        #practiceBtn {
+            width: 120px !important;
+            padding: 8px 12px;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        body:not(.home) #title {
+            display: none !important;
+        }
+
+        #quizBox {
+            width: 80%;
+            max-width: 700px;
+            margin: 0px 20px 20px 20px;
+            padding: 20px;
+
+            border: 2px solid white;
+            border-radius: 12px;
+
+            background: rgba(10, 10, 10, 0.452);
+            padding: 1px 50px 20px 50px;
+            border-radius: 15px;
+        }
+
+        #choices {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            justify-items: center;
+        }
+
+        #choices button {
+            width: 50%;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        .hpRow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 20px;
+        }
+
+        .hpRow2 {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 10px auto;
+        }
+
+        .hpRow p {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            height: 12px;
+            /* HPバーと同じ高さ */
+            line-height: 12px;
+        }
+
+        #enemyName {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            height: 12px;
+            /* HPバーと同じ高さ */
+            line-height: 12px;
+        }
+
+        #battleLog {
+            position: absolute;
+            top: 455px;
+            /* ←上下位置 */
+            left: 50.5%;
+            transform: translateX(-50%);
+            z-index: 10;
+
+            pointer-events: none;
+            z-index: 1;
+            /* クリック邪魔しない */
+        }
+
+        #title img {
+            width: 100%;
+            max-width: 100%;
+            height: auto 100;
+            border-radius: 0;
+            border-radius: 0;
+            box-shadow: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        #title h1 {
+            font-size: 48px;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 10px #fff, 0 0 20px #4caf50;
+            }
+
+            to {
+                text-shadow: 0 0 20px #fff, 0 0 40px #00ffcc;
+            }
+        }
+
+        #pressStart {
+            margin-top: 10px;
+            font-size: 18px;
+            animation: blink 1.2s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            50%,
+            100% {
+                opacity: 1;
+            }
+
+            25%,
+            75% {
+                opacity: 0;
+            }
+        }
+
+        #title button {
+            margin-top: 15px;
+            animation: float 2s ease-in-out infinite;
+        }
+
+        .correct {
+            background: linear-gradient(to bottom, #42a5f5, #1565c0) !important;
+            box-shadow: 0 4px 0 #0d47a1;
+        }
+
+        .wrong {
+            background: linear-gradient(to bottom, #ef5350, #c62828) !important;
+            box-shadow: 0 4px 0 #8e0000;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+
+            100% {
+                transform: translateY(0);
+            }
+        }
+
+        body.home {
+            background: url("../img/タイトル画面.png") no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        #heroImg {
+            width: 75%;
+            max-width: 600px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        @keyframes bgMove {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        body.training {
+            background: url("../img/訓練場ぼかし.png") no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        body.house {
+            background: url("../img/タイトル画面.png") no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        body.field {
+            background: url("../img/草原ぼかし.png") no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        body.forest {
+            background: url(../img/森ぼかし.png) no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        body.castle {
+            background: url(../img/魔王の城の前ぼかし.png) no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        body.king {
+            background: url(../img/魔王の間ぼかし.png) no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        body.king2 {
+            background: url(../img/最後の間ぼかし.png) no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        body.king3 {
+            background: url(../img/最後の間.png) no-repeat;
+            background-size: cover;
+            background-position: center;
+        }
+
+        #enemyWrapper {
+            position: relative;
+            width: 60%;
+            max-width: 600px;
+            margin: 0 auto 5px;
+            /* ←ここ調整（20px → 5px） */
+        }
+
+        #bgImg {
+            width: 100%;
+            display: block;
+        }
+
+        #enemyImg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+        }
+
+        .fadeOutEnemy {
+            animation: fadeOutEnemyAnim 1s forwards;
+        }
+
+        @keyframes fadeOutEnemyAnim {
+            0% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .bar {
+            width: 150px;
+            height: 12px;
+            border: 1px solid #fff;
+            margin: 0;
+        }
+
+        .hp-inner {
+            height: 100%;
+            background: #4caf50;
+            width: 100%;
+            transition: 0.3s;
+        }
+
+        .damageHP {
+            background: red !important;
+            transition: width 0.3s, background 0.3s;
+        }
+
+        .shake {
+            animation: shake 0.3s;
+        }
+
+        @keyframes shake {
+            0% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            50% {
+                transform: translateX(5px);
+            }
+
+            75% {
+                transform: translateX(-5px);
+            }
+
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        .slowFlash {
+            animation: slowFlash 2s ease-in-out;
+        }
+
+        /* HPバー揺れ */
+        .shake {
+            animation: shake 0.3s;
+        }
+
+        .correctFlash {
+            animation: correctFlash 0.6s ease;
+        }
+
+        @keyframes correctFlash {
+            0% {
+                box-shadow: 0 0 0px #00e5ff;
+            }
+
+            50% {
+                box-shadow: 0 0 30px #00ffff, 0 0 60px #00ffff;
+            }
+
+            100% {
+                box-shadow: 0 0 0px #00e5ff;
+            }
+        }
+
+        .battleStartEffect {
+            animation: battleStartAnim 0.6s ease;
+        }
+
+        @keyframes battleStartAnim {
+            0% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+
+            30% {
+                transform: scale(1.2);
+                filter: brightness(3);
+            }
+
+            60% {
+                transform: scale(0.9);
+                filter: brightness(0);
+            }
+
+            100% {
+                transform: scale(1);
+                filter: brightness(1);
+            }
+        }
+
+        /* ダメージフラッシュ */
+        .damageFlash {
+            animation: damageFlash 0.3s;
+        }
+
+        @keyframes damageFlash {
+            0% {
+                background: red;
+            }
+
+            100% {
+                background: #4caf50;
+            }
+        }
+
+        @keyframes slowFlash {
+            0% {
+                background: #000;
+            }
+
+            25% {
+                background: #fff;
+            }
+
+            50% {
+                background: #000;
+            }
+
+            75% {
+                background: #fff;
+            }
+
+            100% {
+                background: #000;
+            }
+        }
+
+        /* ダメージ表示 */
+        .damage {
+            position: absolute;
+            font-size: 28px;
+            font-weight: bold;
+            animation: floatUp 0.8s ease-out;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-40px);
+            }
+        }
+
+        img {
+            width: 120px;
+        }
+
+        /* 斬撃エフェクト */
+        .slash {
+            position: absolute;
+            width: 220px;
+            height: 18px;
+
+            background: linear-gradient(90deg,
+                    transparent 0%,
+                    rgba(255, 255, 255, 0.2) 15%,
+                    rgba(255, 255, 255, 1) 40%,
+                    rgba(0, 255, 255, 1) 50%,
+                    rgba(255, 255, 255, 1) 60%,
+                    rgba(255, 255, 255, 0.2) 85%,
+                    transparent 100%);
+
+            border-radius: 999px;
+
+            box-shadow:
+                0 0 10px white,
+                0 0 20px cyan,
+                0 0 40px cyan,
+                0 0 60px rgba(0, 255, 255, 0.8);
+
+            filter: brightness(1.5);
+
+            opacity: 0;
+            /* ←これ重要 */
+            pointer-events: none;
+
+            animation: slashAnim 0.25s ease-out forwards;
+        }
+
+        .screenShake {
+            animation: screenShake 0.3s;
+        }
+
+        @keyframes screenShake {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            20% {
+                transform: translate(-8px, 2px);
+            }
+
+            40% {
+                transform: translate(8px, -2px);
+            }
+
+            60% {
+                transform: translate(-6px, 1px);
+            }
+
+            80% {
+                transform: translate(6px, -1px);
+            }
+
+            100% {
+                transform: translate(0, 0);
+            }
+        }
+
+        @keyframes slashAnim {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -50%) translate(-80px, 40px) rotate(-35deg) scale(0.8);
+            }
+
+            20% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) translate(80px, -40px) rotate(-35deg) scale(1.1);
+            }
+        }
+
+        #gameover {
+            position: fixed;
+            /* ←画面基準にする */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            text-align: center;
+
+            width: 90%;
+            max-width: 500px;
+
+            background: rgba(10, 10, 10, 0.452);
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        body.gameoverBG {
+            background: url("../img/ゲームオーバー.png") no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        #gameover h1 {
+            font-size: 48px;
+            color: red;
+            text-shadow: 0 0 10px #ff0000;
+        }
+
+        #gameover h3 {
+            margin-bottom: 20px;
+            color: #ffcccc;
+        }
+
+        .healFlash {
+            animation: healFlash 2s ease;
+        }
+
+        @keyframes healFlash {
+            0% {
+                filter: brightness(1);
+            }
+
+            50% {
+                filter: brightness(2) hue-rotate(90deg);
+            }
+
+            /* 緑っぽく */
+            100% {
+                filter: brightness(1);
+            }
+        }
+
+        #clear h1 {
+            font-size: 60px;
+            text-shadow: 0 0 20px gold, 0 0 40px orange;
+        }
+
+        @keyframes clearPop {
+            0% {
+                transform: scale(0);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.5);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        body.clearBG {
+            background: url("../img/ゲームクリア.png") no-repeat;
+            background-size: cover;
+            background-position: center top;
+        }
+
+        @keyframes shine {
+            0% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        .sparkle {
+            position: fixed;
+            width: 6px;
+            height: 6px;
+            background: gold;
+            border-radius: 50%;
+
+            animation: sparkleAnim 2s ease-out;
+        }
+
+        @keyframes sparkleAnim {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(3) translateY(-50px);
+            }
+        }
+
+        #judgeMark {
+            position: absolute;
+            top: 390px;
+            /* battleLogより少し上 */
+            left: 50.5%;
+            transform: translateX(-50%);
+            font-size: 60px;
+            font-weight: bold;
+            z-index: 2;
+            pointer-events: none;
+            margin: 0;
+        }
+
+        .correctMark {
+            color: #00e5ff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .wrongMark {
+            color: #ff4444;
+            text-shadow: 0 0 10px red;
+        }
+    </style>
+</head>
+
+<body class="home">
+    <div id="game">
+
+        <div id="title">
+            <h1>⚔️ クイズで冒険 ⚔️</h1>
+            <h3>ショートカットキーをマスターしよう！</h3>
+            <button onclick="startStory()" id="pressStart">ゲームスタート</button>
+            <button onclick="startPractice()" id="practiceBtn">練習モード</button>
+        </div>
+
+        <div id="story" class="hidden">
+            <img id="heroImg" src="https://via.placeholder.com/120">
+            <div class="box" id="storyText"></div>
+            <button onclick="nextStory()">次へ</button>
+        </div>
+
+        <div id="battle" class="hidden">
+
+            <!-- 上の敵表示 -->
+            <div id="enemyWrapper">
+                <img id="bgImg" src="../img/草原.png">
+                <img id="enemyImg" src="../img/スライムと草原.png">
+            </div>
+
+            <!-- 敵HP -->
+            <div class="hpRow2">
+                <p id="enemyName">スライム</p>
+                <div class="bar">
+                    <div id="enemyBar" class="hp-inner"></div>
+                </div>
+            </div>
+
+            <!-- 下の問題ボックス -->
+            <div id="quizBox">
+
+                <h3 id="question"></h3>
+
+                <div id="choices"></div>
+
+                <div class="hpRow">
+                    <p>主人公</p>
+                    <div class="bar">
+                        <div id="playerBar" class="hp-inner"></div>
+                    </div>
+                </div>
+                <p id="judgeMark"></p>
+                <p id="battleLog"></p>
+                <button id="backBtn" onclick="backToTitle()">タイトルへ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="clear" class="hidden">
+        <h1>🎊 クリア！ 🎊</h1>
+        <p>キミは立派なショートカットマスターだ！</p>
+        <button onclick="location.reload()">タイトルへ</button>
+    </div>
+    <div id="gameover" class="hidden">
+        <h1>💀 GAME OVER 💀</h1>
+        <h3>倒されてしまった...</h3>
+        <button onclick="location.reload()">タイトルへ</button>
+    </div>
+    <script>
+        let playerHP = 3;
+        let maxHP = 3;
+        let stage = 0;
+        let enemyHP = 0;
+        let enemyMax = 0;
+        let phase = 1;
+        let usedEasy = [];
+        let usedMiddle = [];
+        let usedHard = [];
+
+        const quiz_easy = [
+            { q: "１つ戻りたい時に使うキーは？", choices: ["Ctrl+Z", "Ctrl+X", "Ctrl+C", "Ctrl+V"], answer: "Ctrl+Z" },
+            { q: "１つ進みたい時に使うキーは？", choices: ["Ctrl+S", "Ctrl+X", "Ctrl+Y", "Ctrl+T"], answer: "Ctrl+Y" },
+            { q: "ペースト（貼り付け）したい時に使うキーは？", choices: ["Ctrl+Z", "Ctrl+X", "Ctrl+C", "Ctrl+V"], answer: "Ctrl+V" },
+            { q: "全選択したい時に使うキーは？", choices: ["Ctrl+Z", "Ctrl+A", "Ctrl+X", "Ctrl+D"], answer: "Ctrl+A" },
+            { q: "コピー（記憶）したい時に使うキーは？", choices: ["Ctrl+S", "Ctrl+Z", "Ctrl+D", "Ctrl+C"], answer: "Ctrl+C" },
+            { q: "切り取りたい時に使うキーは？", choices: ["Ctrl+B", "Ctrl+S", "Ctrl+X", "Ctrl+D"], answer: "Ctrl+X" },
+            { q: "保存したい時に使うキーは？", choices: ["Ctrl+S", "Ctrl+B", "Ctrl+V", "Ctrl+A"], answer: "Ctrl+S" },
+            { q: "検索したい時に使うキーは？", choices: ["Ctrl+D", "Ctrl+F", "Ctrl+X", "Ctrl+Z"], answer: "Ctrl+F" },
+            { q: "更新したい時に使うキーは？", choices: ["F3", "F4", "F5", "F6"], answer: "F5" },
+            { q: "スタートメニューを表示するキーは？", choices: ["Windows", "Alt", "Fn", "Ctrl"], answer: "Windows" },
+            { q: "エクスプローラーを起動するキーは？", choices: ["Windows+E", "Windows+R", "Windows+W", "Windows+A"], answer: "Windows+E" },
+        ];
+        const quiz_middle = [
+            { q: "半角スペースを入力するキーは？", choices: ["Alt+Space", "Fn+Space", "Ctrl+Space", "Shift+Space"], answer: "Shift+Space" },
+            { q: "ファイルのデータをゴミ箱に移動するキーは？", choices: ["Ctrl+D", "Ctrl+B", "Ctrl+E", "Ctrl+Q"], answer: "Ctrl+D" },
+            { q: "履歴を表示する時に使うキーは？", choices: ["Ctrl+G", "Ctrl+H", "Ctrl+J", "Ctrl+K"], answer: "Ctrl+H" },
+            { q: "新しいタブを開く時に使うキーは？", choices: ["Ctrl+R", "Ctrl+E", "Ctrl+G", "Ctrl+T"], answer: "Ctrl+T" },
+            { q: "デスクトップ画面を表示するキーは？", choices: ["Windows+I", "Windows+S", "Windows+D", "Windows+A"], answer: "Windows+D" },
+            { q: "設定画面を表示するキーは？", choices: ["Windows+I", "Windows+J", "Windows+U", "Windows+K"], answer: "Windows+I" },
+            { q: "PCをロックするキーは？", choices: ["Windows+L", "Windows+O", "Windows+P", "Windows+R"], answer: "Windows+L" },
+            { q: "前、次のページを表示するキーは？", choices: ["Windows+← →", "Alt+← →", "Ctrl+← →", "Shift+← →"], answer: "Alt+← →" },
+            { q: "印刷する時に使うキーは？", choices: ["Ctrl+U", "Ctrl+H", "Ctrl+G", "Ctrl+P"], answer: "Ctrl+P" },
+            { q: "ページをブックマークするキーは？", choices: ["Ctrl+D", "Ctrl+E", "Ctrl+F", "Ctrl+B"], answer: "Ctrl+D" },
+            { q: "ページを閉じる時に使うキーは？？", choices: ["Ctrl+W", "Ctrl+U", "Ctrl+Q", "Ctrl+D"], answer: "Ctrl+W" },
+            { q: "ページを新規作成する時に使うキーは？", choices: ["Ctrl+N", "Ctrl+A", "Ctrl+M", "Ctrl+B"], answer: "Ctrl+N" },
+            { q: "開いているアプリを終了するキーは？", choices: ["Alt+F4", "Alt+F3", "Alt+F2", "Alt+F5"], answer: "Alt+F4" },
+            { q: "全てのウィンドウを最小化するキーは？", choices: ["Windows+M", "Windows+N", "Windows+K", "Windows+J"], answer: "Windows+M" },
+            { q: "ウィンドウを半分に合わせるキーは？", choices: ["Windows+← →", "Ctrl+← →", "Shift+← →", "Tab+← →"], answer: "Windows+← →" },
+            { q: "ウィンドウを切り替える時に使うキーは？", choices: ["Alt+Tab", "Alt+CapsLock", "Alt+Space", "Alt+Fn"], answer: "Alt+Tab" },
+            { q: "常に大文字で入力するキーは？", choices: ["Shift+Tab", "Shift+CapsLock", "Shift+Ctrl", "Shift+Alt"], answer: "Shift+CapsLock" },
+            { q: "コピーしたリストを表示するキーは？", choices: ["Windows+F", "Windows+V", "Windows+A", "Windows+Z"], answer: "Windows+V" },
+            { q: "ヘルプ、サポートを開くキーは？", choices: ["F1", "F2", "F3", "F4"], answer: "F1" },
+            { q: "絵文字パネルを表示するキーは？", choices: ["Windows+.", "Windows+,", "Windows+:", "Windows+;"], answer: "Windows+." }
+        ];
+        const quiz_hard = [
+            { q: "全角カタカナに変換するキーは？", choices: ["F10", "F6", "F7", "F8"], answer: "F7" },
+            { q: "半角英数字に変換するキーは？", choices: ["F8", "F10", "F6", "F9"], answer: "F10" },
+            { q: "全角英数字に変換するキーは？", choices: ["F8", "F7", "F10", "F9"], answer: "F9" },
+            { q: "半角カタカナに変換するキーは？", choices: ["F8", "F10", "F7", "F9"], answer: "F8" },
+            { q: "ひらがなに変換するキーは？", choices: ["F8", "F6", "F7", "F5"], answer: "F6" },
+            { q: "ウィンドウを全画面表示するキーは？", choices: ["F11", "F10", "F12", "F2"], answer: "F11" },
+            { q: "ファイルの名前を変更するキーは？", choices: ["F2", "F3", "F12", "F4"], answer: "F2" },
+        ];
+
+        const quiz_practice = [
+            { q: "コピーのショートカットは？", choices: ["Ctrl+C", "Ctrl+V", "Ctrl+X", "Ctrl+Z"], answer: "Ctrl+C" },
+            { q: "貼り付けのショートカットは？", choices: ["Ctrl+A", "Ctrl+V", "Ctrl+S", "Ctrl+D"], answer: "Ctrl+V" },
+            { q: "元に戻すキーは？", choices: ["Ctrl+Y", "Ctrl+Z", "Ctrl+X", "Ctrl+F"], answer: "Ctrl+Z" },
+            { q: "保存するキーは？", choices: ["Ctrl+S", "Ctrl+P", "Ctrl+N", "Ctrl+W"], answer: "Ctrl+S" },
+            { q: "検索するキーは？", choices: ["Ctrl+H", "Ctrl+F", "Ctrl+G", "Ctrl+T"], answer: "Ctrl+F" }
+        ];
+        let usedPractice = [];
+        let currentQuiz = quiz_easy;
+        let usedQuestions = [];
+        let story = [];
+        let quizIndex = 0; // クイズ順管理
+        let isPracticeMode = false;
+
+        // シャッフル関数（Fisher-Yates）
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        let storyIndex = 0;
+        let isTyping = false; // 入力ロック用
+
+        function setBG(type) {
+            document.body.className = ""; // 一旦リセット
+            document.body.classList.add(type);
+        }
+
+        let typingTimer = null; // ←追加
+
+        function typeText(text, elementId) {
+            const el = document.getElementById(elementId);
+
+            // 前のタイピングを強制停止
+            if (typingTimer) clearInterval(typingTimer);
+
+            el.innerText = "";
+            let i = 0;
+            isTyping = true;
+
+            typingTimer = setInterval(() => {
+                el.innerText += text[i];
+                i++;
+
+                if (i >= text.length) {
+                    clearInterval(typingTimer);
+                    isTyping = false;
+                }
+            }, 30);
+        }
+
+        function startStory() {
+            document.getElementById("backBtn").style.display = "none";
+            document.body.classList.remove("home");
+            setBG("house");
+            document.getElementById("title").classList.add("hidden");
+            document.getElementById("story").classList.remove("hidden");
+
+
+            story = [
+                "主人公『さあ、魔王を倒しに行くぞ！』",
+                "主人公の冒険が始まる...！",
+                "草原にやってきた！",
+                "スライムがあらわれた！",
+                "スライム『ぷるぷる。。。』"
+            ];
+            storyIndex = 0;
+            showStory();
+        }
+
+        function showStory() {
+            const img = document.getElementById("heroImg");
+
+            if (isDefeatScene) {
+                typeText(story[storyIndex], "storyText");
+                return;
+            }
+            // ===== 草原ステージ =====
+            if (stage === 0 && storyIndex <= 1) {
+                img.src = "../img/旅立ち.png"; // 草原シーン１
+            } else if (stage === 0 && storyIndex === 2) {
+                img.src = "../img/草原.png"; // 草原シーン２
+            } else if (stage === 0 && storyIndex === 3) {
+                img.src = "../img/スライムと草原.png"; // 草原シーン３
+                img.classList.add("shake"); // ちょっと揺らす
+                setTimeout(() => img.classList.remove("shake"), 300);
+            } else if (stage === 0 && storyIndex === 4) {
+                img.src = "../img/スライムと草原.png"; // 草原シーン４
+            }
+            // ===== 森ステージ =====
+            else if (stage === 2 && storyIndex === 0) {
+                img.src = "../img/森.png"; // 森シーン１
+            } else if (stage === 2 && storyIndex === 1) {
+                img.src = "../img/森とゴブリン.png"; // 森シーン２
+                img.classList.add("shake"); // ちょっと揺らす
+                setTimeout(() => img.classList.remove("shake"), 300);
+            } else if (stage === 2 && storyIndex === 2) {
+                img.src = "../img/森とゴブリン.png"; // 森シーン３
+            }
+            // ===== 魔王の城の前ステージ =====
+            else if (stage === 4 && storyIndex === 0) {
+                img.src = "../img/魔王の城の前.png"; // 城前シーン１
+            } else if (stage === 4 && storyIndex === 1) {
+                img.src = "../img/城の前とガーディアン.png"; // 城前シーン２
+                img.classList.add("shake"); // ちょっと揺らす
+                setTimeout(() => img.classList.remove("shake"), 300);
+            } else if (stage === 4 && storyIndex === 2) {
+                img.src = "../img/城の前とガーディアン.png"; // 城前シーン３
+            }
+
+            if (stage === 5 && storyIndex === 3) {
+                playerHP = maxHP;
+                updateHP();
+
+                const img = document.getElementById("heroImg");
+
+                // 緑フラッシュ✨
+                document.body.classList.add("healFlash");
+
+                setTimeout(() => {
+                    document.body.classList.remove("healFlash");
+                }, 500);
+            }
+
+            // ===== 魔王の間ステージ =====
+            else if (stage === 6 && storyIndex === 0) {
+                img.src = "../img/魔王の間.png"; // 魔王の間シーン１
+            } else if (stage === 6 && storyIndex === 1) {
+                img.src = "../img/魔王の間と魔王.png"; // 魔王の間シーン２
+                img.classList.add("shake"); // ちょっと揺らす
+                setTimeout(() => img.classList.remove("shake"), 300);
+            } else if (stage === 6 && storyIndex === 2) {
+                img.src = "../img/魔王の間と魔王.png"; // 魔王の間シーン３
+            } else if (stage === 6 && storyIndex === 3) {
+                img.src = "../img/魔王の間と魔王.png"; // 魔王の間シーン４
+            } else if (stage === 6 && storyIndex === 4) {
+                img.src = "../img/魔王の間と魔王.png"; // 魔王の間シーン５
+            } else if (stage === 6 && storyIndex === 5) {
+                img.src = "../img/魔王の間と魔王.png"; // 魔王の間シーン６
+            }
+
+            // セリフに応じて画像変化（変身演出）
+            if (stage === 7 && storyIndex === 1) {
+                const img = document.getElementById("heroImg");
+                img.src = "../img/最後の間と魔王２.png";
+
+                img.classList.add("shake"); // 変身の揺れ演出
+                setTimeout(() => img.classList.remove("shake"), 300);
+            }
+
+            else if (stage === 8 && storyIndex === 0) {
+                const img = document.getElementById("heroImg");
+
+                // フェードアウト（スライムと同じ）
+                img.classList.add("fadeOutEnemy");
+
+                setTimeout(() => {
+                    img.style.opacity = 0;
+                }, 1000);
+            }
+
+            if (isPracticeMode && storyIndex === 2) {
+                setBG("training");
+                img.src = "../img/訓練場とカカシ.png";
+            }
+
+            typeText(story[storyIndex], "storyText");
+        }
+
+        function nextStory() {
+            if (isTyping) return;
+
+            // 背景切り替え
+            if (stage === 0 && storyIndex === 1) {
+                setBG("field");
+            }
+
+            storyIndex++;
+
+            // まだストーリー続くなら表示
+            if (storyIndex < story.length) {
+                showStory();
+                return;
+            }
+            if (stage === -1) {
+                showGameOver();
+                return;
+            }
+
+            if (stage === 7 && hardModeTriggered) {
+
+                currentQuiz = quiz_hard;
+                quizIndex = 0;
+
+                document.getElementById("story").classList.add("hidden");
+                document.getElementById("battle").classList.remove("hidden");
+
+                document.body.classList.remove("slowFlash");
+
+                isBattleLocked = false;
+
+                loadQuiz();
+                return;
+            }
+
+            if (stage === 8 && storyIndex >= story.length) {
+                document.getElementById("story").classList.add("hidden");
+                document.getElementById("battle").classList.add("hidden");
+
+                document.getElementById("clear").classList.remove("hidden");
+
+                document.body.style.background = "";
+                document.body.className = "clearBG";
+
+                createSparkles();
+                return;
+            }
+            // ===== ステージごとの処理 =====
+            switch (stage) {
+
+                case 0:
+                    playBattleStart(() => {
+                        startBattle("スライム", 3, "field");
+                    });
+                    return;
+
+                case 1:
+                    nextStage();
+                    return;
+
+                case 2:
+                    playBattleStart(() => {
+                        startBattle("ゴブリン", 5, "forest");
+                    });
+                    return;
+
+                case 3:
+                    nextStage();
+                    return;
+
+                case 4:
+                    playBattleStart(() => {
+                        startBattle("ガーディアン", 5, "castle");
+                    });
+                    return;
+
+                case 5:
+                    nextStage();
+                    return;
+
+                case 6:
+                    playBattleStart(() => {
+                        startBattle("魔王", 5, "king");
+                    });
+                    return;
+
+                case 7:
+                    playBattleStart(() => {
+                        startBattle("魔王２", 8, "king2");
+                    });
+                    return;
+            }
+            if (isPracticeMode && storyIndex >= story.length) {
+                startBattle("カカシ", 999, "training");
+                return;
+            }
+        }
+
+        function nextStage() {
+            stage++;
+
+            if (stage === 1) {
+                setBG("field");
+                story = [
+                    "スライムを倒した！",
+                    "先へ進もう！"
+                ];
+                document.getElementById("heroImg").src = "../img/草原.png";
+            }
+
+            else if (stage === 2) {
+                setBG("forest");
+                story = [
+                    "森にやってきた！",
+                    "ゴブリンがあらわれた！",
+                    "ゴブリン『グギャァ！』"
+                ];
+                document.getElementById("heroImg").src = "../img/森.png";
+            }
+
+            else if (stage === 3) {
+                setBG("forest");
+                story = [
+                    "ゴブリンを倒した！",
+                    "魔王の城はもうすぐだ...",
+                    "先へ進もう！"];
+                document.getElementById("heroImg").src = "../img/森.png";
+            }
+
+            else if (stage === 4) {
+                setBG("castle");
+                story = [
+                    "魔王の城の前へやってきた！",
+                    "ガーディアンがあらわれた！",
+                    "ガーディアン『侵入者排除...』"];
+                document.getElementById("heroImg").src = "../img/魔王の城の前.png";
+            }
+            else if (stage === 5) {
+                setBG("castle");
+                story = [
+                    "ガーディアンを倒した！",
+                    "主人公『強敵だったな...』",
+                    "ポーションを見つけた！",
+                    "HPが全回復した！",
+                    "よし、魔王はこの城の中だ！"];
+                document.getElementById("heroImg").src = "../img/魔王の城の前.png";
+            }
+
+            else if (stage === 6) {
+                setBG("king");
+                story = [
+                    "ついに魔王の間へ来たぞ...",
+                    "魔王『よくぞここまで辿り着いたな...』",
+                    "主人公『魔王！お前を倒す為に来たぞ！』",
+                    "魔王『フン。我を倒すなどと笑わせるな羽虫が』",
+                    "魔王『いいだろう。お前を試してやろう！』",
+                    "最後の戦いがいま、始まる———"];
+                document.getElementById("heroImg").src = "../img/魔王の間.png";
+            }
+
+            else if (stage === 7) {
+                if (phase === 1) {
+                    phase = 2;
+                    transformBoss();
+                    return;
+                }
+            }
+
+            else if (stage === 8) {
+                finalBossDefeat();
+                return;
+            }
+
+            document.getElementById("battle").classList.add("hidden");
+            document.getElementById("story").classList.remove("hidden");
+            storyIndex = 0;
+            showStory();
+        }
+
+        function startBattle(name, hp, bg) {
+            document.getElementById("enemyName").innerText =
+                (name === "魔王２") ? "魔竜王" : name;
+            document.getElementById("battle").classList.remove("hidden");
+            document.getElementById("story").classList.add("hidden");
+
+            setBG(bg);
+
+            if (!isPracticeMode) {
+                setBG(bg);
+            } else {
+                setBG("training");
+            }
+
+            if (isPracticeMode) {
+                const enemy = document.getElementById("enemyImg");
+                const bgImg = document.getElementById("bgImg");
+
+                bgImg.src = "../img/訓練場ぼかし.png";
+                enemy.src = "../img/訓練場とカカシ.png";
+
+                enemyHP = Infinity;
+                enemyMax = Infinity;
+
+                updateHP();
+                loadQuiz();
+                return; // ←これ超重要！！！！！
+            }
+
+            if (name === "スライム" || name === "ゴブリン") {
+                currentQuiz = quiz_easy;
+            }
+
+            else if (name === "ガーディアン" || name.includes("魔王")) {
+                currentQuiz = quiz_middle;
+            }
+
+            enemyHP = hp;
+            enemyMax = hp;
+
+            const enemy = document.getElementById("enemyImg");
+            const bgImg = document.getElementById("bgImg");
+
+            // ▼ここ追加が本体🔥
+            if (name === "スライム") {
+                bgImg.src = "../img/草原.png";
+                enemy.src = "../img/スライムと草原.png";
+            }
+
+            else if (name === "ゴブリン") {
+                bgImg.src = "../img/森.png";
+                enemy.src = "../img/森とゴブリン.png";
+            }
+
+            else if (name === "ガーディアン") {
+                bgImg.src = "../img/魔王の城の前.png";
+                enemy.src = "../img/城の前とガーディアン.png";
+            }
+
+            else if (name === "魔王２") {
+                bgImg.src = "../img/最後の間.png";
+                enemy.src = "../img/最後の間と魔王２.png";
+            }
+
+            else if (name.includes("魔王")) {
+                bgImg.src = "../img/魔王の間.png";
+                enemy.src = "../img/魔王の間と魔王.png";
+            }
+
+            updateHP();
+            loadQuiz();
+        }
+
+        function loadQuiz() {
+            let used;
+
+            if (currentQuiz === quiz_easy) used = usedEasy;
+            else if (currentQuiz === quiz_middle) used = usedMiddle;
+            else if (currentQuiz === quiz_hard) used = usedHard;
+            else if (currentQuiz === quiz_practice) used = usedPractice;
+
+            if (used.length >= currentQuiz.length) {
+                used.length = 0;
+            }
+
+            let availableQuiz = currentQuiz.filter(q => !used.includes(q));
+
+            const q = availableQuiz[Math.floor(Math.random() * availableQuiz.length)];
+            used.push(q);
+
+            document.getElementById("question").innerText = q.q;
+
+            const div = document.getElementById("choices");
+            div.innerHTML = "";
+
+            const shuffledChoices = [...q.choices];
+            shuffle(shuffledChoices);
+
+            shuffledChoices.forEach(c => {
+                const b = document.createElement("button");
+                b.innerText = c;
+                b.onclick = function () {
+                    this.onclick = null;
+                    checkAnswer(c, q.answer);
+                };
+                div.appendChild(b);
+            });
+        }
+
+        function showSlash() {
+            const slash = document.createElement("div");
+            slash.className = "slash";
+
+            const enemy = document.getElementById("enemyImg");
+            const rect = enemy.getBoundingClientRect();
+
+            // 敵の中心位置
+            const centerX = rect.left + rect.width / 2 + window.scrollX;
+            const centerY = rect.top + rect.height / 2 + window.scrollY + 20;
+
+            // 少しズラしてランダム感出す
+            const offsetX = (Math.random() - 0.5) * 60;
+            const offsetY = (Math.random() - 0.5) * 40;
+
+            slash.style.left = (centerX + offsetX) + "px";
+            slash.style.top = (centerY + offsetY) + "px";
+
+            document.body.appendChild(slash);
+
+            setTimeout(() => slash.remove(), 400);
+        }
+
+        function shakeEnemy() {
+            const enemy = document.getElementById("enemyImg");
+
+            enemy.classList.add("shake");
+
+            setTimeout(() => {
+                enemy.classList.remove("shake");
+            }, 300);
+        }
+
+        function shakeScreen() {
+            document.body.classList.add("screenShake");
+
+            setTimeout(() => {
+                document.body.classList.remove("screenShake");
+            }, 300);
+        }
+
+        function showDamage(target, value) {
+            const dmg = document.createElement("div");
+            dmg.className = "damage";
+            dmg.innerText = "-" + value;
+
+            let bar;
+
+            if (target === "enemy") {
+                bar = document.getElementById("enemyBar");
+            } else {
+                bar = document.getElementById("playerBar");
+            }
+
+            const rect = bar.getBoundingClientRect();
+
+            // HPバーのすぐ右に固定
+            dmg.style.left = (rect.right + window.scrollX + 10) + "px";
+            dmg.style.top = (rect.top + window.scrollY - 8) + "px";
+
+            document.body.appendChild(dmg);
+
+            setTimeout(() => dmg.remove(), 600);
+        }
+
+        let isBattleLocked = false;
+        let hardModeTriggered = false;
+
+        function checkAnswer(sel, ans) {
+            if (isBattleLocked) return;
+            isBattleLocked = true;
+
+            const buttons = document.querySelectorAll("#choices button");
+
+            // 全ボタン無効化
+            buttons.forEach(b => b.disabled = true);
+            console.log("HP:", enemyHP);
+
+            // 押したボタン取得
+            const clickedBtn = Array.from(buttons).find(b => b.innerText === sel);
+
+            if (sel === ans) {
+                clickedBtn.classList.add("correct");
+                clickedBtn.classList.add("correctFlash");
+
+                showSlash();
+                showDamage("enemy", 1);
+
+                enemyHP--;
+                damageEffect("enemyBar");
+                shakeEnemy();
+
+                log("正解！攻撃！", "#00ffcc", "○");
+
+            } else {
+                clickedBtn.classList.add("wrong");
+
+                // 正解も青くする（分かりやすく）
+                buttons.forEach(b => {
+                    if (b.innerText === ans) {
+                        b.classList.add("correct");
+                        b.classList.add("correctFlash");
+                    }
+                });
+
+                showDamage("player", 1);
+
+                playerHP--;
+                damageEffect("playerBar");
+                shakeScreen();
+
+                log("不正解！ダメージ！", "red", "×");
+            }
+
+            updateHP();
+
+            // 魔王2限定イベント
+            if (stage === 7 && enemyHP <= 4 && !hardModeTriggered) {
+                hardModeTriggered = true;
+
+                setTimeout(() => {
+                    triggerHardMode();
+                }, 1500);
+
+                return;
+            }
+
+            if (isPracticeMode) {
+                if (sel === ans) {
+                    log("正解！", "#00ffcc", "○");
+                } else {
+                    log("不正解！", "red", "×");
+                }
+
+                setTimeout(() => {
+                    loadQuiz(); // 次の問題
+                    isBattleLocked = false;
+                }, 1500);
+
+                return;
+            }
+            setTimeout(() => {
+                checkBattle();
+                isBattleLocked = false;
+            }, 1500);
+        }
+
+        function updateHP() {
+
+            document.getElementById("playerBar").style.width =
+                (playerHP / maxHP * 100) + "%";
+
+            // ★練習モードは敵HP表示しない
+            if (!isPracticeMode) {
+                document.getElementById("enemyBar").style.width =
+                    (enemyHP / enemyMax * 100) + "%";
+            }
+        }
+
+        function playBattleStart(nextAction) {
+            document.body.classList.add("battleStartEffect");
+
+            setTimeout(() => {
+                document.body.classList.remove("battleStartEffect");
+                nextAction(); // ←戦闘開始を遅らせて実行
+            }, 600);
+        }
+
+        function damageEffect(barId) {
+            const bar = document.getElementById(barId);
+
+            bar.classList.add("damageHP");
+            shakeBar(barId); // 揺れも同時発動🔥
+
+            setTimeout(() => {
+                bar.classList.remove("damageHP");
+            }, 300);
+        }
+
+        function log(t, color = "#fff", mark = "") {
+            const el = document.getElementById("battleLog");
+            const judge = document.getElementById("judgeMark");
+
+            el.innerText = t;
+            el.style.color = color;
+
+            // ←ここ追加
+            if (mark === "○") {
+                el.style.left = "51%";
+            } else {
+                el.style.left = "50.5%";
+            }
+
+            judge.innerText = mark;
+            judge.className = "";
+
+            if (mark === "○") {
+                judge.classList.add("correctMark");
+            } else if (mark === "×") {
+                judge.classList.add("wrongMark");
+            }
+
+            setTimeout(() => {
+                el.innerText = "";
+                judge.innerText = "";
+                judge.className = "";
+
+                // 元に戻す
+                el.style.left = "50.5%";
+            }, 1500);
+        }
+
+        function shakeBar(barId) {
+            const bar = document.getElementById(barId);
+            bar.classList.add("shake");
+
+            setTimeout(() => {
+                bar.classList.remove("shake");
+            }, 300);
+        }
+
+        function flashBar(barId) {
+            const bar = document.getElementById(barId);
+            bar.classList.add("damageFlash");
+
+            setTimeout(() => {
+                bar.classList.remove("damageFlash");
+            }, 300);
+        }
+
+        function checkBattle() {
+            if (isPracticeMode) {
+                loadQuiz();
+                return;
+            }
+
+            if (playerHP <= 0) {
+                showDefeatScene();
+                return;
+            }
+
+            if (enemyHP <= 0) {
+                const enemy = document.getElementById("enemyImg");
+
+                if (stage !== 7) {
+                    enemy.classList.add("fadeOutEnemy");
+                }
+
+                setTimeout(() => {
+                    enemy.classList.remove("fadeOutEnemy");
+                    enemy.style.opacity = 1;
+                    nextStage();
+                }, 1000);
+
+                return;
+            }
+
+            // 通常時だけ次の問題
+            loadQuiz();
+        }
+
+        let isDefeatScene = false;
+
+        function showDefeatScene() {
+            isDefeatScene = true; // ←追加
+
+            document.getElementById("battle").classList.add("hidden");
+            document.getElementById("story").classList.remove("hidden");
+
+            const enemySrc = document.getElementById("enemyImg").src;
+
+            const img = document.getElementById("heroImg");
+            img.src = enemySrc;
+
+            img.classList.add("shake");
+            setTimeout(() => img.classList.remove("shake"), 300);
+
+            story = [
+                "主人公『うわあああぁぁあぁあ！！』"
+            ];
+
+            storyIndex = 0;
+            showStory();
+
+            stage = -1;
+        }
+
+        function showGameOver() {
+            document.getElementById("battle").classList.add("hidden");
+            document.getElementById("story").classList.add("hidden");
+            document.getElementById("clear").classList.add("hidden");
+
+            document.getElementById("gameover").classList.remove("hidden");
+
+            // 背景を暗くする
+            document.body.className = "gameoverBG";
+        }
+
+        function transformBoss() {
+            document.body.classList.add("slowFlash");
+
+            document.getElementById("heroImg").src = "../img/魔王の間と魔王.png";
+            document.getElementById("story").classList.remove("hidden");
+            document.getElementById("battle").classList.add("hidden");
+
+            story = [
+                "魔王『ぐおおおおお！』",
+                "何だと...魔王の姿が！",
+                "魔王『これが我の真の姿だ！』"
+            ];
+
+            storyIndex = 0;
+            showStory();
+
+            // ボタンは普通に押せるようにする
+        }
+
+        function finalBossDefeat() {
+            document.getElementById("battle").classList.add("hidden");
+            document.getElementById("story").classList.remove("hidden");
+
+            // 念のため位置リセット
+            document.getElementById("battleLog").style.position = "static";
+            setBG("king3");
+            story = [
+                "魔王『そんなバカな・・・！』",
+                "主人公『やった、魔王を倒したぞ...！』",
+                "これで世界に平和が訪れた！"
+            ];
+
+            storyIndex = 0;
+            showStory();
+        }
+
+        function createSparkles() {
+            for (let i = 0; i < 30; i++) {
+                const s = document.createElement("div");
+                s.className = "sparkle";
+
+                s.style.left = Math.random() * window.innerWidth + "px";
+                s.style.top = Math.random() * window.innerHeight + "px";
+
+                document.body.appendChild(s);
+
+                setTimeout(() => s.remove(), 2000);
+            }
+        }
+
+        function triggerHardMode() {
+
+            isBattleLocked = true;
+
+            document.getElementById("battle").classList.add("hidden");
+            document.getElementById("story").classList.remove("hidden");
+
+            document.body.classList.add("slowFlash");
+
+            story = [
+                "魔王『ここまでやるとはな...』",
+                "魔王『これならどうだ！』",
+                "なんとクイズが難しくなってしまった！"
+            ];
+
+            storyIndex = 0;
+            showStory();
+        }
+
+        function startPractice() {
+            isPracticeMode = true;
+            currentQuiz = quiz_practice;
+            usedPractice = [];
+            // HP・敵情報を非表示
+            document.querySelector(".hpRow").style.display = "none";
+            document.querySelector(".hpRow2").style.display = "none";
+            document.getElementById("backBtn").style.display = "inline-block";
+            document.getElementById("title").classList.add("hidden");
+            document.getElementById("story").classList.remove("hidden");
+
+            setBG("house");
+
+            story = [
+                "主人公『冒険に出る前に特訓していくか...』",
+                "ここではキーボードの基本やパソコンの基礎を学べるぞ！",
+                "満足するまでクイズをやってみよう！"
+            ];
+
+            storyIndex = 0;
+            showStory();
+        }
+
+        function backToTitle() {
+            location.reload();
+        }
+    </script>
+</body>
+
+</html>

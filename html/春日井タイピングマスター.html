@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>春日井タイピングマスター</title>
+    <style>
+        :root {
+            --primary: #2ed573;
+            --danger: #ff4757;
+            --bg: #f1f2f6;
+            --text: #2f3542;
+        }
+
+        body {
+            font-family: 'Segoe UI', Meiryo, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--bg);
+            margin: 0;
+            transition: background-color 0.2s;
+            overflow: hidden;
+        }
+
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 85%;
+            max-width: 900px;
+            position: relative;
+        }
+
+        #combo-container {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-weight: bold;
+            font-style: italic;
+            color: var(--primary);
+            font-size: 1.5rem;
+            opacity: 0;
+            transform: scale(1);
+            transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #57606f;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f2f6;
+        }
+
+        #score-wrapper {
+            position: relative;
+        }
+
+        #score-plus {
+            position: absolute;
+            right: -25px;
+            top: -10px;
+            color: var(--primary);
+            font-size: 0.9rem;
+            opacity: 0;
+        }
+
+        #kanji-display {
+            font-size: 1.4rem;
+            color: #747d8c;
+            margin-bottom: 5px;
+            min-height: 1.8rem;
+        }
+
+        #word-display {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            letter-spacing: 0.1rem;
+            transition: transform 0.05s;
+        }
+
+        #roma-guide-display {
+            font-size: 1.8rem;
+            font-family: 'Consolas', 'Monaco', monospace;
+            min-height: 2.2rem;
+            margin-bottom: 30px;
+            white-space: nowrap;
+        }
+
+        .timer-bar-container {
+            width: 100%;
+            height: 8px;
+            background: #dfe4ea;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: var(--primary);
+            border-radius: 4px;
+            transition: width 1s linear;
+        }
+
+        .pop {
+            transform: scale(1.05);
+        }
+
+        .score-up {
+            animation: scoreUp 0.4s ease-out;
+        }
+
+        @keyframes scoreUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        .miss-flash {
+            background-color: #fab1a0 !important;
+        }
+
+        #result-rank {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 15px 0;
+            color: #ffa502;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container" id="main-container">
+        <div id="combo-container"><span id="combo-count">0</span> COMBO</div>
+
+        <div class="stats">
+            <div>TIME: <span id="timer">60</span>s</div>
+            <div id="score-wrapper">
+                SCORE: <span id="score">0</span>
+                <span id="score-plus">+1</span>
+            </div>
+        </div>
+
+        <div id="kanji-display">READY?</div>
+        <div id="word-display">Press Any Key</div>
+        <div id="roma-guide-display">タイピングを開始してください</div>
+
+        <div class="timer-bar-container">
+            <div id="timer-bar"></div>
+        </div>
+    </div>
+
+    <script>
+        const wordList = [
+            { kanji: "いろんなしごと春日井", hira: "いろんなしごとかすがい" },
+            { kanji: "富士山", hira: "ふじさん" },
+            { kanji: "ポスト", hira: "ぽすと" },
+            { kanji: "お茶", hira: "おちゃ" },
+            { kanji: "コーヒー", hira: "こーひー" },
+            { kanji: "新聞紙", hira: "しんぶんし" },
+            { kanji: "パソコン", hira: "ぱそこん" },
+            { kanji: "加藤さん", hira: "かとうさん" },
+            { kanji: "春日井市", hira: "かすがいし" },
+            { kanji: "車椅子", hira: "くるまいす" },
+            { kanji: "介助犬", hira: "かいじょけん" },
+            { kanji: "プログラミング", hira: "ぷろぐらみんぐ" },
+            { kanji: "落合公園", hira: "おちあいこうえん" },
+            { kanji: "博物館明治村", hira: "はくぶつかんめいじむら" },
+            { kanji: "織田信長", hira: "おだのぶなが" },
+            { kanji: "豊臣秀吉", hira: "とよとみひでよし" },
+            { kanji: "徳川家康", hira: "とくがわいえやす" },
+            { kanji: "サボテンのまち", hira: "さぼてんのまち" },
+            { kanji: "犬", hira: "いぬ" },
+            { kanji: "猫", hira: "ねこ" },
+            { kanji: "タヌキ", hira: "たぬき" },
+            { kanji: "車", hira: "くるま" },
+            { kanji: "電車", hira: "でんしゃ" },
+            { kanji: "タイピング", hira: "たいぴんぐ" },
+            { kanji: "ぬいぐるみ", hira: "ぬいぐるみ" },
+            { kanji: "鉛筆", hira: "えんぴつ" },
+            { kanji: "消しゴム", hira: "けしごむ" },
+            { kanji: "筋肉", hira: "きんにく" },
+            { kanji: "飛行機", hira: "ひこうき" },
+            { kanji: "小野道風", hira: "おののとうふう" },
+            { kanji: "ケローナ通り", hira: "けろーなどおり" },
+            { kanji: "鳥居松", hira: "とりいまつ" },
+            { kanji: "剣道", hira: "けんどう" },
+            { kanji: "高蔵寺", hira: "こうぞうじ" },
+            { kanji: "勝川", hira: "かちがわ" },
+            { kanji: "八田川", hira: "はったがわ" },
+            { kanji: "埴輪", hira: "はにわ" },
+            { kanji: "グリーンピア春日井", hira: "ぐりーんぴあかすがい" },
+            { kanji: "愛岐トンネル群", hira: "あいぎとんねるぐん" },
+            { kanji: "サンフロッグ春日井", hira: "さんふろっぐかすがい" },
+            { kanji: "内々神社", hira: "うつつじんじゃ" },
+            { kanji: "味美二子山古墳", hira: "あじよしふたごやまこふん" },
+            { kanji: "朝宮公園", hira: "あさみやこうえん" },
+            { kanji: "城嶺橋", hira: "しろがねばし" },
+            { kanji: "玉野御嶽神社", hira: "たまのおんたけじんじゃ" },
+            { kanji: "喫茶店", hira: "きっさてん" },
+            { kanji: "タンポポ", hira: "たんぽぽ" },
+            { kanji: "桜", hira: "さくら" },
+            { kanji: "チューリップ", hira: "ちゅーりっぷ" },
+            { kanji: "ウサギ", hira: "うさぎ" },
+            { kanji: "愛知牧場", hira: "あいちぼくじょう" },
+            { kanji: "掃除機", hira: "そうじき" },
+            { kanji: "モップ", hira: "もっぷ" },
+            { kanji: "カラオケ", hira: "からおけ" },
+            { kanji: "ウィンドウ", hira: "うぃんどう" },
+            { kanji: "ファイル", hira: "ふぁいる" },
+            { kanji: "フォルダー", hira: "ふぉるだー" },
+            { kanji: "ポートフォリオ", hira: "ぽーとふぉりお" },
+            { kanji: "カブトムシ", hira: "かぶとむし" },
+            { kanji: "クワガタ", hira: "くわがた" },
+            { kanji: "てんとう虫", hira: "てんとうむし" },
+            { kanji: "夏祭り", hira: "なつまつり" },
+            { kanji: "納涼まつり", hira: "のうりょうまつり" },
+            { kanji: "花火", hira: "はなび" },
+            { kanji: "伊多波刀神社", hira: "いたはとじんじゃ" },
+            { kanji: "円福寺", hira: "えんぷくじ" },
+            { kanji: "弥勒山", hira: "みろくやま" },
+            { kanji: "高御堂古墳", hira: "たかみどうこふん" },
+            { kanji: "展望台", hira: "てんぼうだい" },
+            { kanji: "水車", hira: "すいしゃ" },
+        ];
+
+        const romajiMap = {
+            'あ': ['a'], 'い': ['i'], 'う': ['u'], 'え': ['e'], 'お': ['o'],
+            'か': ['ka'], 'き': ['ki'], 'く': ['ku'], 'け': ['ke'], 'こ': ['ko'],
+            'さ': ['sa'], 'し': ['shi', 'si', 'ci'], 'す': ['su'], 'せ': ['se'], 'そ': ['so'],
+            'た': ['ta'], 'ち': ['chi', 'ti'], 'つ': ['tsu', 'tu'], 'て': ['te'], 'と': ['to'],
+            'な': ['na'], 'に': ['ni'], 'ぬ': ['nu'], 'ね': ['ne'], 'の': ['no'],
+            'は': ['ha'], 'ひ': ['hi'], 'ふ': ['fu', 'hu'], 'へ': ['he'], 'ほ': ['ho'],
+            'ま': ['ma'], 'み': ['mi'], 'む': ['mu'], 'め': ['me'], 'も': ['mo'],
+            'や': ['ya'], 'ゆ': ['yu'], 'よ': ['yo'],
+            'ら': ['ra'], 'り': ['ri'], 'る': ['ru'], 'れ': ['re'], 'ろ': ['ro'],
+            'わ': ['wa'], 'を': ['wo'], 'ん': ['n', 'nn'], 'ー': ['-'], 'っ': ['xtsu', 'tsu'],
+            'が': ['ga'], 'ぎ': ['gi'], 'ぐ': ['gu'], 'げ': ['ge'], 'ご': ['go'],
+            'ざ': ['za'], 'じ': ['ji', 'zi'], 'ず': ['zu'], 'ぜ': ['ze'], 'ぞ': ['zo'],
+            'だ': ['da'], 'ぢ': ['di'], 'づ': ['du'], 'で': ['de'], 'ど': ['do'],
+            'ば': ['ba'], 'び': ['bi'], 'ぶ': ['bu'], 'べ': ['be'], 'ぼ': ['bo'],
+            'ぱ': ['pa'], 'ぴ': ['pi'], 'ぷ': ['pu'], 'ぺ': ['pe'], 'ぽ': ['po'],
+            'きゃ': ['kya'], 'きゅ': ['kyu'], 'きょ': ['kyo'],
+            'りゃ': ['rya'], 'りゅ': ['ryu'], 'りょ': ['ryo'],
+            'しゃ': ['sha', 'sya'], 'しゅ': ['shu', 'syu'], 'しょ': ['sho', 'syo'],
+            'ちゃ': ['cha', 'tya', 'cya'], 'ちゅ': ['chu', 'tyu', 'cyu'], 'ちょ': ['cho', 'tyo', 'cyo'],
+            'じゃ': ['ja', 'jya', 'zya'], 'じゅ': ['ju', 'jyu', 'zyu'], 'じょ': ['jo', 'jyo', 'zyo'],
+            'ふぁ': ['fa'], 'ふぃ': ['fi'], 'ふぇ': ['fe'], 'ふぉ': ['fo'],
+            'うぃ': ['wi'], 'うぇ': ['we'], 'うぉ': ['wo'], 'うゅ': ['wyu'],
+            'てぃ': ['thi'], 'とぅ': ['thu'], 'でぃ': ['di'], 'どぅ': ['du'],
+            'ぁ': ['xa', 'la'], 'ぃ': ['xi', 'li'], 'ぇ': ['xe', 'le'], 'ぉ': ['xo', 'lo'],
+
+        };
+
+        let hiraIndex = 0, currentInput = "", typedFullRoma = "", currentWord = {};
+        let score = 0, combo = 0, timeLeft = 60, isPlaying = false;
+        let timerId = null, canRestart = true;
+
+        const mainContainer = document.getElementById("main-container");
+        const wordDisplay = document.getElementById("word-display");
+        const scorePlus = document.getElementById("score-plus");
+
+        function setWord() {
+            const remainingList = wordList.filter(w => w !== currentWord);
+            currentWord = remainingList[Math.floor(Math.random() * remainingList.length)];
+            document.getElementById("kanji-display").innerText = currentWord.kanji;
+            hiraIndex = 0; currentInput = ""; typedFullRoma = "";
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            wordDisplay.innerHTML = `<span style="color: #bdc3c7;">${currentWord.hira.substring(0, hiraIndex)}</span><span style="color: #333;">${currentWord.hira.substring(hiraIndex)}</span>`;
+
+            let char1 = currentWord.hira[hiraIndex], char2 = currentWord.hira[hiraIndex + 1] || "";
+            let p1 = romajiMap[char1] || [], p2 = romajiMap[char1 + char2] || [];
+
+            if (char1 === 'っ' && char2 !== "") {
+                const nextP = romajiMap[char2] || romajiMap[char2 + (currentWord.hira[hiraIndex + 2] || "")] || [];
+                nextP.forEach(p => p2.push(p[0] + p));
+            }
+            const allP = p2.concat(p1);
+            let matchedP = allP.find(p => p.startsWith(currentInput)) || allP[0] || "";
+
+            let futureRoma = "", tempIdx = hiraIndex + (p2.some(p => p.startsWith(currentInput)) && currentInput !== "" ? 2 : 1);
+            while (tempIdx < currentWord.hira.length) {
+                let f1 = currentWord.hira[tempIdx], f2 = currentWord.hira[tempIdx + 1] || "";
+                if (romajiMap[f1 + f2]) { futureRoma += romajiMap[f1 + f2][0]; tempIdx += 2; }
+                else { futureRoma += (romajiMap[f1] ? romajiMap[f1][0] : ""); tempIdx += 1; }
+            }
+
+            document.getElementById("roma-guide-display").innerHTML = `<span style="color: #bdc3c7;">${typedFullRoma}</span><span style="color: var(--primary); font-weight: bold;">${currentInput}</span><span style="color: #444;">${matchedP.substring(currentInput.length)}</span><span style="color: #eee;">${futureRoma}</span>`;
+        }
+
+        function startGame() {
+            isPlaying = true; canRestart = false; score = 0; combo = 0; timeLeft = 60;
+            document.getElementById("score").innerText = score;
+            document.getElementById("timer-bar").style.backgroundColor = "var(--primary)";
+            setWord();
+            timerId = setInterval(() => {
+                timeLeft--;
+                document.getElementById("timer").innerText = timeLeft;
+                document.getElementById("timer-bar").style.width = (timeLeft / 60 * 100) + "%";
+                if (timeLeft < 10) document.getElementById("timer-bar").style.backgroundColor = "var(--danger)";
+                if (timeLeft <= 0) endGame();
+            }, 1000);
+        }
+
+        function endGame() {
+            isPlaying = false; clearInterval(timerId);
+            const rankFunc = (s) => {
+                if (s > 1500) return "★★★★★";
+                if (s > 1000) return "★★★★";
+                if (s > 600) return "★★★☆";
+                if (s > 250) return "★★☆☆";
+                if (s > 100) return "★☆☆☆";
+                return "☆☆☆☆";
+            };
+            document.getElementById("kanji-display").innerText = "RESULT";
+            wordDisplay.innerHTML = `<div id="result-rank">${rankFunc(score)}</div>`;
+            document.getElementById("roma-guide-display").innerHTML = `スコア: ${score} | 最大コンボ: ${combo}`;
+            setTimeout(() => { canRestart = true; document.getElementById("kanji-display").innerText = "Press Any Key to Retry"; }, 3000);
+        }
+
+        window.addEventListener('message', (e) => {
+            if (!isPlaying) {
+                if (e.data.type === 'start') { if (canRestart) startGame(); }
+                return;
+            }
+        });
+
+        window.addEventListener("keydown", (e) => {
+            if (["Shift", "Control", "Alt"].includes(e.key)) return;
+            if (!isPlaying) { if (canRestart) startGame(); return; }
+
+            let key = e.key.toLowerCase();
+            if (key === "ー") key = "-";
+
+            let char1 = currentWord.hira[hiraIndex], char2 = currentWord.hira[hiraIndex + 1] || "";
+            let p1 = romajiMap[char1] || [], p2 = romajiMap[char1 + char2] || [];
+            if (char1 === 'っ' && char2 !== "") {
+                const nextP = romajiMap[char2] || romajiMap[char2 + (currentWord.hira[hiraIndex + 2] || "")] || [];
+                nextP.forEach(p => p2.push(p[0] + p));
+            }
+
+            const nextIn = currentInput + key;
+            const matched = p2.concat(p1).find(p => p.startsWith(nextIn));
+
+            if (matched) {
+                currentInput = nextIn;
+                combo++;
+                let gain = 1 + Math.floor(combo / 10);
+                score += gain;
+
+                document.getElementById("score").innerText = score;
+                scorePlus.innerText = "+" + gain;
+                scorePlus.classList.remove("score-up");
+                void scorePlus.offsetWidth;
+                scorePlus.classList.add("score-up");
+
+                wordDisplay.classList.add("pop");
+                setTimeout(() => wordDisplay.classList.remove("pop"), 50);
+
+                const cbCont = document.getElementById("combo-container");
+                cbCont.style.opacity = 1;
+                cbCont.style.transform = `scale(${1 + Math.min(combo / 100, 0.5)})`;
+                document.getElementById("combo-count").innerText = combo;
+
+                if (p2.includes(currentInput)) { typedFullRoma += currentInput; hiraIndex += 2; currentInput = ""; }
+                else if (p1.includes(currentInput)) {
+                    if (char1 === 'ん' && currentInput === 'n') {
+                        const next = currentWord.hira[hiraIndex + 1];
+                        if (!next || !['あ', 'い', 'う', 'え', 'お', 'な', 'に', 'ぬ', 'ね', 'の', 'や', 'ゆ', 'よ'].includes(next)) {
+                            typedFullRoma += currentInput; hiraIndex += 1; currentInput = "";
+                        }
+                    } else { typedFullRoma += currentInput; hiraIndex += 1; currentInput = ""; }
+                }
+
+                if (hiraIndex >= currentWord.hira.length) setWord();
+                else updateDisplay();
+            } else {
+                combo = 0;
+                document.getElementById("combo-container").style.opacity = 0;
+                mainContainer.classList.add("miss-flash");
+                setTimeout(() => mainContainer.classList.remove("miss-flash"), 100);
+            }
+        });
+    </script>
+</body>
+
+</html>
