@@ -1,0 +1,106 @@
+/* 全体 */
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #fff;
+    color: #333;
+}
+
+/* ヘッダー */
+header {
+    background: #1abc9c;
+    text-align: center;
+    padding: 5px;
+}
+
+.logo {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.nav ul {
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+    width: 75%;
+}
+
+.nav a {
+    margin-left: 15px;
+    color: #fff;
+    text-decoration: none;
+}
+
+.nav a:hover {
+    text-decoration: underline;
+}
+
+/* メイン */
+main {
+    padding: 20px;
+}
+
+/* フッター */
+footer {
+    background: #1abc9c;
+    color: #fff;
+    text-align: center;
+    padding: 15px;
+}
+
+footer a {
+    color: #fff;
+    text-decoration: none;
+}
+
+.about {
+    background: #f5f5f5;
+    margin: 20px;
+    padding: 20px;
+    border-left: 5px solid #00adb5;
+    border-radius: 8px;
+    line-height: 1.6;
+}
+
+/* 2カラム */
+.container {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+}
+
+/* 左（メイン） */
+.content {
+    flex: 3;
+}
+
+/* 右（サイドバー） */
+.sidebar {
+    flex: 1;
+}
+
+/* サイド広告 */
+.side-ad {
+    margin-bottom: 20px;
+}
+
+.side-ad img {
+    width: 100%;
+    border-radius: 10px;
+}
+
+.ad-label {
+    font-size: 12px;
+    color: gray;
+}
+
+/* スマホ対応（超重要） */
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        order: 2;
+    }
+}
